@@ -73,6 +73,8 @@ class Cell {
     strokeWeight(strokeWeight);
     if (stroke != null) {
       stroke(hexValueToRGB(stroke));
+    }else{
+      noStroke();
     }
     fill(hexValueToRGB(fill));
 

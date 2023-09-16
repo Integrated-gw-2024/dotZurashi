@@ -14,8 +14,6 @@ import controlP5.*;
 import java.util.HashMap;
 import java.util.Map;
 
-
-
 Boolean debugMode = false;
 
 float x = 0;
@@ -23,7 +21,6 @@ float y = 0;
 
 float targetX = 0;
 float targetY = 0;
-
 
 PImage img;
 
@@ -35,8 +32,6 @@ ColorMap colmap = new ColorMap();
 
 XML[] firstChild;
 
-String[] importedRectColor;
-
 Boolean isMouseReleased = true;
 
 float displayScale = 1;
@@ -45,14 +40,12 @@ float svgWidth = 0;
 float svgHeight = 0;
 
 float randX, randY = 10;
-ControlP5 slider;
 
+ControlP5 slider;
 int sliderWidth, sliderHeight;
 Boolean isViewCopiedText = false;
 
 void setup() {
-  PImage icon = loadImage( "icon.png" );
-  surface.setIcon( icon );
   surface.setTitle("Dot Zurashi");
   size(1100, 700);
   textFont(createFont("IBMPlexSansJP-Regular.ttf", 48));
@@ -61,14 +54,14 @@ void setup() {
   b = new Cell();
   Cells = new ArrayList<Cell>();
 
-  sliderWidth = 200;
+  sliderWidth = 240;
   sliderHeight = 20;
   ControlFont font = new ControlFont(createFont("IBMPlexSansJP-Regular.ttf", 10));
   slider = new ControlP5(this);
   slider.addSlider("randX")
     .setCaptionLabel("random X")
     .setValue(20)
-    .setRange(0, 100)
+    .setRange(0, 160)
     .setPosition(20, 30)
     .setSize(sliderWidth, sliderHeight)
     .setFont(font)
@@ -77,7 +70,7 @@ void setup() {
   slider.addSlider("randY")
     .setCaptionLabel("random Y")
     .setValue(20)
-    .setRange(0, 100)
+    .setRange(0, 160)
     .setPosition(20, 60)
     .setSize(sliderWidth, sliderHeight)
     .setColorCaptionLabel(color(255))
@@ -96,25 +89,15 @@ void setup() {
 void draw() {
   background(241, 240, 240);
 
-  sliderBackground();
-
   pushMatrix();
-  //translate((width/2)-svgWidth/2, (height/2)-svgHeight/2);
   translate((width/2), (height/2));
   scale(displayScale);
-
-  //println(mouseX,mouseY);
-  //fill(255,0,0);
-  //rect(0,0,40,40);
-  //println(displayScale);
 
   fill(0);
 
   for (int i=0; i<=Cells.size()-1; i++) {
     if (floor(Cells.get(i).targetX)!=floor(Cells.get(i).x) && floor(Cells.get(i).targetY)!=floor(Cells.get(i).y)) {
       Cells.get(i).move();
-    } else {
-      //Cells.get(i).setTargetRandom();
     }
   }
 
@@ -125,6 +108,7 @@ void draw() {
 
   loadSVG();
   popMatrix();
+  sliderBackground();
   slider.draw();
   displayDragEnterScene();
 
@@ -137,7 +121,7 @@ void draw() {
 
   float textZabutonX = width;
 
-  if (isViewCopiedText) {
+  if (isViewCopiedText && !isDragEnter) {
     szH = 37;
     szW = 122;
     fill(255);
@@ -207,7 +191,7 @@ void displayDragEnterScene() {
 }
 
 void loadSVG() {
-ArrayList<XML> circles;
+  ArrayList<XML> circles;
   XML xml;
   if (isDrop && (500<millis()-dropMillis)) {
     Cells.clear();
@@ -215,92 +199,14 @@ ArrayList<XML> circles;
     xml = loadXML(imgPath);
 
     circles = new ArrayList<XML>();
-    findCircles(xml);
-    importedRectColor = new String[circles.size()];
+    findCirclesFromSVG(xml, circles);
 
-    println(xml);
-    
     autoResizeCells(xml);
-
-    for (int i=0; i<circles.size(); i++) {
-      float x, y, r;
-
-      Boolean hasAttributeR = circles.get(i).hasAttribute("r");
-      Boolean hasAttributeRX = circles.get(i).hasAttribute("rx");
-      if (hasAttributeR) {
-        r = circles.get(i).getFloat("r");
-        x = circles.get(i).getFloat("cx");
-        y = circles.get(i).getFloat("cy");
-      } else if (hasAttributeRX) {
-        r = circles.get(i).getFloat("rx");
-        x = circles.get(i).getFloat("x");
-        y = circles.get(i).getFloat("y");
-      } else {
-        r = 10;
-        x = 10;
-        y = 10;
-      }
-
-      b = new Cell();
-
-      String fillCol = circles.get(i).getString("fill");
-      String strokeCol = circles.get(i).getString("stroke");
-      String strokeWidth = circles.get(i).getString("stroke-width");
-      
-      println(strokeWidth);
-
-      try {
-        b.setFillColor(fillCol);
-        b.setStrokeColor(strokeCol);
-        b.setStrokeWeight(strokeWidth);
-      }
-      catch(NullPointerException err) {
-        println(err);
-      }
-
-      float offsetX = svgWidth/2;
-      float offsetY = svgHeight/2;
-
-      b.initialX = x-offsetX;
-      b.initialY = y-offsetY;
-
-      b.x = x-offsetX;
-      b.y = y-offsetY;
-
-      b.num = i;
+    addCellsFromSVG(circles);
 
 
-      b.targetX = x-offsetX;
-      b.targetY = y-offsetY;
-      b.scale = r * 2;
-
-      Cells.add(b);
-    }
     isDragEnter = false;
     isDrop = false;
-  }
-}
-
-
-String extractColor(String input, String pattern) {
-  Pattern p = Pattern.compile(pattern);
-  Matcher matcher = p.matcher(input);
-
-  if (matcher.find()) {
-    return "#" + matcher.group(1);
-  } else {
-    return null;
-  }
-}
-
-void findCircles(XML element) {
-  String elmName = element.getName();
-  if ("circle".equals(elmName) || "rect".equals(elmName)) {
-    circles.add(element);
-  }
-  XML[] children = element.getChildren();
-  for (XML child : children) {
-    findCircles(child);
   }
 }
 
@@ -308,45 +214,4 @@ void sliderBackground() {
   fill(0, 0, 0, 100);
   noStroke();
   rect(10, 10, sliderWidth*1.42, 90);
-}
-
-void autoResizeCells(XML x) {
-  String viewBox = x.getString("viewBox");
-
-    Pattern viewBoxPatt = Pattern.compile("\\b(?:0|(?:[1-9]\\d*))(\\.\\d+)?\\b");
-    Matcher viewBoxMatc = viewBoxPatt.matcher(viewBox);
-
-    String[] svgSizeString = new String[4];
-
-    int a = 0;
-    while (viewBoxMatc.find()) {
-      svgSizeString[a] = viewBoxMatc.group();
-      a++;
-    }
-
-    try {
-      svgWidth = Float.parseFloat(svgSizeString[2]);
-      svgHeight = Float.parseFloat(svgSizeString[3]);
-    }
-    catch (NumberFormatException e) {
-      println("整数に変換できませんでした。");
-    }
-
-    float topValue = 0;
-
-
-    if (svgWidth>svgHeight) {
-      println(svgWidth);
-      topValue = svgWidth;
-    } else if (svgWidth<svgHeight) {
-      println(svgHeight);
-      topValue = svgHeight;
-    } else {
-      println("svgのサイズが取得されていません。サイズの比較に失敗しました。");
-    }
-
-    float scaleFactor = min(width / svgWidth, height / svgHeight);
-
-    displayScale = scaleFactor * 0.65;
-    println(displayScale);
 }
