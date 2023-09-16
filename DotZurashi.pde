@@ -33,7 +33,6 @@ ArrayList<Cell> Cells;
 
 ColorMap colmap = new ColorMap();
 
-XML xml;
 XML[] firstChild;
 
 String[] importedRectColor;
@@ -206,9 +205,10 @@ void displayDragEnterScene() {
     cursor(ARROW);
   }
 }
-ArrayList<XML> circles;
 
 void loadSVG() {
+ArrayList<XML> circles;
+  XML xml;
   if (isDrop && (500<millis()-dropMillis)) {
     Cells.clear();
 
@@ -219,44 +219,8 @@ void loadSVG() {
     importedRectColor = new String[circles.size()];
 
     println(xml);
-    String viewBox = xml.getString("viewBox");
-
-    Pattern viewBoxPatt = Pattern.compile("\\b(?:0|(?:[1-9]\\d*))(\\.\\d+)?\\b");
-    Matcher viewBoxMatc = viewBoxPatt.matcher(viewBox);
-
-    String[] svgSizeString = new String[4];
-
-    int a = 0;
-    while (viewBoxMatc.find()) {
-      svgSizeString[a] = viewBoxMatc.group();
-      a++;
-    }
-
-    try {
-      svgWidth = Float.parseFloat(svgSizeString[2]);
-      svgHeight = Float.parseFloat(svgSizeString[3]);
-    }
-    catch (NumberFormatException e) {
-      println("整数に変換できませんでした。");
-    }
-
-    float topValue = 0;
-
-
-    if (svgWidth>svgHeight) {
-      println(svgWidth);
-      topValue = svgWidth;
-    } else if (svgWidth<svgHeight) {
-      println(svgHeight);
-      topValue = svgHeight;
-    } else {
-      println("svgのサイズが取得されていません。サイズの比較に失敗しました。");
-    }
-
-    float scaleFactor = min(width / svgWidth, height / svgHeight);
-
-    displayScale = scaleFactor * 0.65;
-    println(displayScale);
+    
+    autoResizeCells(xml);
 
     for (int i=0; i<circles.size(); i++) {
       float x, y, r;
@@ -310,12 +274,6 @@ void loadSVG() {
       b.targetY = y-offsetY;
       b.scale = r * 2;
 
-      /*println(importedRectColor[className]);
-       if (importedRectColor[className] != null) {
-       b.col = importedRectColor[className];
-       }*/
-
-
       Cells.add(b);
     }
     isDragEnter = false;
@@ -350,4 +308,45 @@ void sliderBackground() {
   fill(0, 0, 0, 100);
   noStroke();
   rect(10, 10, sliderWidth*1.42, 90);
+}
+
+void autoResizeCells(XML x) {
+  String viewBox = x.getString("viewBox");
+
+    Pattern viewBoxPatt = Pattern.compile("\\b(?:0|(?:[1-9]\\d*))(\\.\\d+)?\\b");
+    Matcher viewBoxMatc = viewBoxPatt.matcher(viewBox);
+
+    String[] svgSizeString = new String[4];
+
+    int a = 0;
+    while (viewBoxMatc.find()) {
+      svgSizeString[a] = viewBoxMatc.group();
+      a++;
+    }
+
+    try {
+      svgWidth = Float.parseFloat(svgSizeString[2]);
+      svgHeight = Float.parseFloat(svgSizeString[3]);
+    }
+    catch (NumberFormatException e) {
+      println("整数に変換できませんでした。");
+    }
+
+    float topValue = 0;
+
+
+    if (svgWidth>svgHeight) {
+      println(svgWidth);
+      topValue = svgWidth;
+    } else if (svgWidth<svgHeight) {
+      println(svgHeight);
+      topValue = svgHeight;
+    } else {
+      println("svgのサイズが取得されていません。サイズの比較に失敗しました。");
+    }
+
+    float scaleFactor = min(width / svgWidth, height / svgHeight);
+
+    displayScale = scaleFactor * 0.65;
+    println(displayScale);
 }
